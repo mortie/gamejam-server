@@ -1,17 +1,20 @@
-var SockSugar = require("socksugar");
+let SockSugar = require("socksugar");
+let Game = require("./js/game");
+let log = require("mlogger");
+let fs = require("fs");
 
-var server = new SockSugar({
-	port: 8081
+let conf = JSON.parse(fs.readFileSync("conf.json", "utf8"));
+
+let server = new SockSugar({
+	port: conf.port
 });
 
-server.on("connection", (socket) => {
-	console.log("Connection");
+let game = new Game();
+game.start();
 
-	socket.on("request", (req) => {
-		console.log("request for "+req.url);
-
-		req.reply({
-			msg: "hi."
-		});
-	});
+server.on("connection", (sock) => {
+	game.newPlayer(sock);
+	log.info("New connection!");
 });
+
+log.info("Server started on port "+conf.port+".");
