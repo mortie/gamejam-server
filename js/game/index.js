@@ -170,9 +170,9 @@ class Player extends Entity {
 		let f = new Vec2(0, 0);
 
 		if (this.keys.up)
-			f.set(0, -0.1);
+			f.set(0, -0.4);
 		if (this.keys.down)
-			f.set(0, 0.1);
+			f.set(0, 0.4);
 		if (this.keys.left)
 			this.rotForce -= 0.005;
 		if (this.keys.right)
