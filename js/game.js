@@ -1,5 +1,9 @@
 let Vec2 = require("./vec2");
 
+function round(n) {
+	return Math.round(n * 1000) / 1000
+}
+
 function randint(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -111,7 +115,7 @@ class Bullet extends Entity {
 		if (!first)
 			return;
 
-		this.game.players.forEach((p) => p.sock.send("set", {
+		this.game.players.forEach((p) => p.sendSet({
 			type: "bullet",
 			id: this.id,
 			ownerId: this.ownerId,
@@ -132,6 +136,7 @@ class Player extends Entity {
 		this.rotVel = 0;
 		this.canShoot = true;
 		this.health = 100;
+		this.sendSetQueue = [];
 
 		sock.on("request", (req) => {
 			if (req.url == "get_id") {
@@ -183,7 +188,7 @@ class Player extends Entity {
 		this.force(f.x, f.y);
 
 		this.vel.scale(0.9);
-		this.rotVel *= 0.86;
+		this.rotVel *= 0.84;
 
 		//Detect collissions
 		this.game.entities.forEach((e) => {
@@ -192,7 +197,7 @@ class Player extends Entity {
 					this.health -= 10;
 					e.despawn();
 					if (this.health <= 0)
-						this.despawn();
+			this.despawn();
 				}
 			}
 		});
@@ -209,31 +214,31 @@ class Player extends Entity {
 		//3   2
 		var rotated = [
 			new Vec2(-this.width/2, -this.height/2),
-			new Vec2(this.width/2, -this.height/2),
-			new Vec2(this.width/2, this.height/2),
-			new Vec2(-this.width/2, this.height/2)
-		].map((p) => p.rotate(this.rot));
+				new Vec2(this.width/2, -this.height/2),
+				new Vec2(this.width/2, this.height/2),
+				new Vec2(-this.width/2, this.height/2)
+					].map((p) => p.rotate(this.rot));
 
 		let tl = new Vec2(0, 0);
 		let br = new Vec2(0, 0);
 
 		rotated.forEach((p) => {
 			if (p.x < tl.x)
-				tl.x = p.x;
-			if (p.y < tl.y)
-				tl.y = p.y;
-			if (p.x > br.x)
-				br.x = p.x;
-			if (p.y > br.y)
-				br.y = p.y;
+			tl.x = p.x;
+		if (p.y < tl.y)
+			tl.y = p.y;
+		if (p.x > br.x)
+			br.x = p.x;
+		if (p.y > br.y)
+			br.y = p.y;
 		});
 
 		this.boundingRectCache = new Rectangle(
-			this.pos.x + tl.x,
-			this.pos.y + tl.y,
-			br.x - tl.x,
-			br.y - tl.y
-		);
+				this.pos.x + tl.x,
+				this.pos.y + tl.y,
+				br.x - tl.x,
+				br.y - tl.y
+				);
 
 		return this.boundingRectCache;
 	}
@@ -246,13 +251,17 @@ class Player extends Entity {
 		this.rotForce = 0;
 	}
 
+	sendSet(obj) {
+		this.sendSetQueue.push(obj);
+	}
+
 	send(first) {
 		let obj = {
 			id: this.id,
-			pos: this.pos,
-			vel: this.vel,
-			rot: this.rot,
-			rotVel: this.rotVel,
+			pos: {x: round(this.pos.x), y: round(this.pos.y)},
+			vel: {x: round(this.vel.x), y: round(this.vel.y)},
+			rot: round(this.rot),
+			rotVel: round(this.rotVel),
 			keys: this.keys,
 			health: this.health
 		}
@@ -260,7 +269,7 @@ class Player extends Entity {
 		if (first)
 			obj.type = "player";
 
-		this.game.players.forEach((p) => p.sock.send("set", obj));
+		this.game.players.forEach((p) => p.sendSet(obj));
 	}
 }
 
@@ -326,6 +335,10 @@ export default class Game {
 
 	send() {
 		this.entities.forEach((e) => e.send());
+		this.players.forEach((p) => {
+			p.sock.send("set", p.sendSetQueue);
+			p.sendSetQueue = [];
+		});
 		this.sendTimeout = setTimeout(this.send.bind(this), this.sendInterval);
 	}
 }

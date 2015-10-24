@@ -18,3 +18,4 @@ server.on("connection", (sock) => {
 });
 
 log.info("Server started on port "+conf.port+".");
+log.info("PID: "+process.pid);
