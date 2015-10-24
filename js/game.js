@@ -1,3 +1,5 @@
+let Vec2 = require("./vec2");
+
 function randint(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -6,75 +8,6 @@ function random(min, max) {
 }
 function inRange(n, min, max) {
 	return n >= min && n <= max;
-}
-
-class Vec2 {
-	constructor(x, y) {
-		this.x = x;
-		this.y = y;
-	}
-
-	length() {
-		return Math.sqrt((this.x * this.x) + (this.y * this.y));
-	}
-
-	clone() {
-		return new Vec2(this.x, this.y);
-	}
-
-	set(x, y) {
-		if (x instanceof Vec2)
-			return this.set(x.x, x.y);
-
-		this.x = x;
-		this.y = y;
-		return this;
-	}
-
-	add(x, y) {
-		if (x instanceof Vec2)
-			return this.add(x.x, x.y);
-
-		this.x += x;
-		this.y += y;
-		return this;
-	}
-
-	sub(x, y) {
-		if (x instanceof Vec2)
-			return this.sub(x.x, x.y);
-
-		this.x -= x;
-		this.y -= y;
-		return this;
-	}
-
-	scale(num) {
-		this.x *= num;
-		this.y *= num;
-		return this;
-	}
-
-	normalize() {
-		var len = this.length();
-
-		if (len === 0) {
-			this.x = 1;
-			this.y = 0;
-		} else {
-			this.scale(1 / len);
-		}
-
-		return this;
-	}
-
-	rotate(rad) {
-		let x = this.x;
-		let y = this.y;
-		this.x = x * Math.cos(rad) - y * Math.sin(rad);
-		this.y = y * Math.cos(rad) + x * Math.sin(rad);
-		return this;
-	}
 }
 
 class Rectangle {
@@ -94,6 +27,10 @@ class Rectangle {
 			(inRange(a.x, b.x, b.x + b.width) || inRange(b.x, a.x, a.x + a.width)) &&
 			(inRange(a.y, b.y, b.y + b.height) || inRange(b.y, a.y, a.y + a.height))
 		);
+	}
+
+	clone() {
+		return new Rectangle(this.x, this.y, this.width, this.height);
 	}
 }
 
@@ -120,10 +57,10 @@ class Entity {
 	}
 
 	intersectsPoint(e) {
-		let rect = this.boundingRect;
-		let r = new Rectangle(e.pos.x, e.pos.y, 1, 1);
-
-		return rect.intersects(r);
+		return (
+			e.pos.x > this.pos.x && e.pos.x < this.pos.x + this.width &&
+			e.pos.y > this.pos.y && e.pos.y < this.pos.y + this.height
+		);
 	}
 
 	move(dt) {
@@ -167,6 +104,8 @@ class Bullet extends Entity {
 		this.vel = vel;
 
 		setTimeout(() => this.despawn(), 1000);
+
+		this.send(true);
 	}
 
 	send(first) {
@@ -185,7 +124,7 @@ class Bullet extends Entity {
 
 class Player extends Entity {
 	constructor(sock, id, game) {
-		super(0, 0, 25, 60, id, game);
+		super(randint(-50, 50), randint(-50, 50), 25, 60, id, game);
 		this.sock = sock;
 		this.keys = {};
 		this.dead = false;
@@ -205,6 +144,8 @@ class Player extends Entity {
 			} else if (req.url == "keyup") {
 				delete this.keys[req.data.key];
 			}
+
+			game.entities.forEach((e) => e.send(true));
 		});
 
 		sock.on("close", () => this.despawn());
@@ -321,10 +262,13 @@ export default class Game {
 		this.entities = [];
 		this.players = [];
 
-		this.timeout = null;
+		this.updateTimeout = null;
+		this.sendTimeout = null;
 		this.prevTime = null;
 
-		this.fps = 10;
+		this.updateInterval = 1000/60;
+		this.sendInterval = 1000/15;
+		this.dt = 0;
 
 		this.id = 1;
 	}
@@ -338,31 +282,30 @@ export default class Game {
 	spawn(ent) {
 		this.entities[this.id] = ent;
 		this.id += 1;
-		ent.send(true);
 	}
 
 	start() {
 		this.prevTime = new Date().getTime();
 		this.update();
+		this.send();
 	}
 
 	stop() {
-		clearTimeout(this.timeout);
+		clearTimeout(this.updateTimeout);
+		clearTimeout(this.sendTimeout);
 	}
 
 	update() {
-		let dt = new Date().getTime() - this.prevTime;
+		this.dt = new Date().getTime() - this.prevTime;
 		this.prevTime = new Date().getTime();
 
-		this.entities.forEach((e) => {
-			if (e.dead)
-				delete this.entities[e.id];
-			else
-				e.move(dt);
-		});
-
+		this.entities.forEach((e) => e.move(this.dt));
 		this.entities.forEach((e) => e.update());
-		this.entities.forEach((e) => e.send(this.players));
-		this.timeout = setTimeout(this.update.bind(this), 1000/this.fps);
+		this.updateTimeout = setTimeout(this.update.bind(this), this.updateInterval);
+	}
+
+	send() {
+		this.entities.forEach((e) => e.send());
+		this.sendTimeout = setTimeout(this.send.bind(this), this.sendInterval);
 	}
 }
