@@ -21,8 +21,6 @@ class Rectangle {
 	intersects(b) {
 		let a = this;
 
-		//console.log("if ("+a.x+", "+a.y+") intersects ("+b.x+", "+b.y+")");
-
 		return (
 			(inRange(a.x, b.x, b.x + b.width) || inRange(b.x, a.x, a.x + a.width)) &&
 			(inRange(a.y, b.y, b.y + b.height) || inRange(b.y, a.y, a.y + a.height))
@@ -104,7 +102,7 @@ class Bullet extends Entity {
 		this.ownerId = ownerId;
 		this.vel = vel;
 
-		setTimeout(() => this.despawn(), 4000);
+		setTimeout(() => this.despawn(), 2000);
 
 		this.send(true);
 	}
@@ -125,7 +123,7 @@ class Bullet extends Entity {
 
 class Player extends Entity {
 	constructor(sock, id, game) {
-		super(randint(-50, 50), randint(-50, 50), 25, 60, id, game);
+		super(randint(-300, 300), randint(-300, 300), 25, 60, id, game);
 		this.sock = sock;
 		this.keys = {};
 		this.dead = false;
@@ -155,14 +153,19 @@ class Player extends Entity {
 	update(dt) {
 		let f = new Vec2(0, 0);
 
-		if (this.keys.up)
-			f.set(0, -0.9);
+		if (this.keys.up) {
+			if (this.keys.sprint)
+				f.set(0, -5);
+			else
+				f.set(0, -2);
+		}
 		if (this.keys.down)
-			f.set(0, 0.9);
+			f.set(0, 2);
+
 		if (this.keys.left)
-			this.rotForce -= 0.005;
+			this.rotForce -= 0.03;
 		if (this.keys.right)
-			this.rotForce += 0.005;
+			this.rotForce += 0.03;
 
 		if (this.keys.shoot && this.canShoot) {
 			let vel = new Vec2(0, -1).rotate(this.rot).add(this.vel);
@@ -173,19 +176,20 @@ class Player extends Entity {
 			let b = new Bullet(pos, vel, this.id, this.game.id, this.game);
 			this.game.spawn(b);
 			this.canShoot = false;
-			setTimeout(() => this.canShoot = true, 50);
+			setTimeout(() => this.canShoot = true, 100);
 		}
 
 		f.rotate(this.rot);
 		this.force(f.x, f.y);
 
-		this.vel.scale(0.99);
+		this.vel.scale(0.9);
+		this.rotVel *= 0.86;
 
 		//Detect collissions
 		this.game.entities.forEach((e) => {
 			if (e instanceof Bullet) {
 				if (e.ownerId !== this.id && this.intersectsPoint(e)) {
-					this.health -= 3;
+					this.health -= 10;
 					e.despawn();
 					if (this.health <= 0)
 						this.despawn();
@@ -269,7 +273,7 @@ export default class Game {
 		this.sendTimeout = null;
 		this.prevTime = null;
 
-		this.updateInterval = 1000/60;
+		this.updateInterval = 1000/30;
 		this.sendInterval = 1000/15;
 		this.dt = 0;
 
@@ -302,7 +306,20 @@ export default class Game {
 		this.dt = new Date().getTime() - this.prevTime;
 		this.prevTime = new Date().getTime();
 
-		this.entities.forEach((e) => e.move(this.dt));
+		let dimx = 40000;
+		let dimy = 40000;
+		this.entities.forEach((e) => {
+			e.move(this.dt);
+
+			if (e.pos.x > dimx)
+				e.pos.x = -dimx;
+			else if (e.pos.x < -dimx)
+				e.pos.x = dimx;
+			if (e.pos.y > dimy)
+				e.pos.y = -dimy;
+			else if (e.pos.y < -dimy)
+				e.pos.y = dimy;
+		});
 		this.entities.forEach((e) => e.update());
 		this.updateTimeout = setTimeout(this.update.bind(this), this.updateInterval);
 	}
