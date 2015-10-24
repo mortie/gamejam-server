@@ -1,3 +1,4 @@
 node_modules
 .jshintrc
 npm-debug.log
+conf.json
