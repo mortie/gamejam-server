@@ -104,7 +104,7 @@ class Bullet extends Entity {
 		this.ownerId = ownerId;
 		this.vel = vel;
 
-		setTimeout(() => this.despawn(), 1000);
+		setTimeout(() => this.despawn(), 4000);
 
 		this.send(true);
 	}
