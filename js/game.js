@@ -57,9 +57,10 @@ class Entity {
 	}
 
 	intersectsPoint(e) {
+		let rect = this.boundingRect;
 		return (
-			e.pos.x > this.pos.x && e.pos.x < this.pos.x + this.width &&
-			e.pos.y > this.pos.y && e.pos.y < this.pos.y + this.height
+			e.pos.x > rect.x && e.pos.x < rect.x + rect.width &&
+			e.pos.y > rect.y && e.pos.y < rect.y + rect.height
 		);
 	}
 
@@ -155,9 +156,9 @@ class Player extends Entity {
 		let f = new Vec2(0, 0);
 
 		if (this.keys.up)
-			f.set(0, -0.4);
+			f.set(0, -0.9);
 		if (this.keys.down)
-			f.set(0, 0.4);
+			f.set(0, 0.9);
 		if (this.keys.left)
 			this.rotForce -= 0.005;
 		if (this.keys.right)
@@ -177,6 +178,8 @@ class Player extends Entity {
 
 		f.rotate(this.rot);
 		this.force(f.x, f.y);
+
+		this.vel.scale(0.99);
 
 		//Detect collissions
 		this.game.entities.forEach((e) => {
