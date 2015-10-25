@@ -146,7 +146,9 @@ class Player extends Entity {
 					id: this.id
 				});
 
-				game.entities.forEach((e) => e.send(true));
+				setTimeout(() => {
+					game.entities.forEach((e) => e.send(true));
+				}, 100);
 			} else if (req.url == "keydown") {
 				this.keys[req.data.key] = true;
 			} else if (req.url == "keyup") {
@@ -194,7 +196,7 @@ class Player extends Entity {
 			let b = new Bullet(pos, vel, this.id, this.game.id, this.game);
 			this.game.spawn(b);
 			this.canShoot = false;
-			setTimeout(() => this.canShoot = true, 300);
+			setTimeout(() => this.canShoot = true, 100);
 		}
 
 		f.rotate(this.rot);
@@ -296,7 +298,7 @@ export default class Game {
 		this.prevTime = null;
 
 		this.updateInterval = 1000/30;
-		this.sendInterval = 1000/15;
+		this.sendInterval = 1000/20;
 		this.dt = 0;
 
 		this.id = 1;
