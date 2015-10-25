@@ -60,6 +60,8 @@ class Entity {
 
 	intersectsPoint(e) {
 		let rect = this.boundingRect;
+		let r = new Rectangle(e.pos.x, e.pos.y, e.vel.x, e.vel.y);
+		return rect.intersects(r);
 		return (
 			e.pos.x > rect.x && e.pos.x < rect.x + rect.width &&
 			e.pos.y > rect.y && e.pos.y < rect.y + rect.height
@@ -153,6 +155,16 @@ class Player extends Entity {
 		});
 
 		sock.on("close", () => this.despawn());
+
+		this.healthInterval = setInterval(() => {
+			if (this.health < 100)
+				this.health += 1;
+		}, 200);
+	}
+
+	despawn() {
+		super.despawn();
+		clearInterval(this.healthInterval);
 	}
 
 	update(dt) {
@@ -172,6 +184,7 @@ class Player extends Entity {
 		if (this.keys.right)
 			this.rotForce += 0.03;
 
+		//Shoot
 		if (this.keys.shoot && this.canShoot) {
 			let vel = new Vec2(0, -1).rotate(this.rot).add(this.vel);
 
@@ -181,20 +194,20 @@ class Player extends Entity {
 			let b = new Bullet(pos, vel, this.id, this.game.id, this.game);
 			this.game.spawn(b);
 			this.canShoot = false;
-			setTimeout(() => this.canShoot = true, 100);
+			setTimeout(() => this.canShoot = true, 300);
 		}
 
 		f.rotate(this.rot);
 		this.force(f.x, f.y);
 
 		this.vel.scale(0.9);
-		this.rotVel *= 0.84;
+		this.rotVel *= 0.8;
 
 		//Detect collissions
 		this.game.entities.forEach((e) => {
 			if (e instanceof Bullet) {
 				if (e.ownerId !== this.id && this.intersectsPoint(e)) {
-					this.health -= 10;
+					this.health -= 20;
 					e.despawn();
 					if (this.health <= 0)
 						this.despawn();
