@@ -139,12 +139,15 @@ class Player extends Entity {
 		this.canShoot = true;
 		this.health = 100;
 		this.sendSetQueue = [];
+		this.name = "";
 
 		sock.on("request", (req) => {
 			if (req.url == "get_id") {
 				req.reply({
 					id: this.id
 				});
+
+				this.name = req.data.name;
 
 				setTimeout(() => {
 					game.entities.forEach((e) => e.send(true));
@@ -281,8 +284,10 @@ class Player extends Entity {
 			health: this.health
 		}
 
-		if (first)
+		if (first) {
 			obj.type = "player";
+			obj.name = this.name;
+		}
 
 		this.game.players.forEach((p) => p.sendSet(obj));
 	}
