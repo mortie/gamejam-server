@@ -199,7 +199,7 @@ class Player extends Entity {
 			let b = new Bullet(pos, vel, this.id, this.game.id, this.game);
 			this.game.spawn(b);
 			this.canShoot = false;
-			setTimeout(() => this.canShoot = true, 100);
+			setTimeout(() => this.canShoot = true, 50);
 		}
 
 		f.rotate(this.rot);
