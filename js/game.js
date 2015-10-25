@@ -88,7 +88,7 @@ class Entity {
 
 	update() {}
 
-	send() {}
+	send(first) {}
 
 	despawn() {
 		this.game.players.forEach((p) => p.sock.send("despawn", {
@@ -143,13 +143,13 @@ class Player extends Entity {
 				req.reply({
 					id: this.id
 				});
+
+				game.entities.forEach((e) => e.send(true));
 			} else if (req.url == "keydown") {
 				this.keys[req.data.key] = true;
 			} else if (req.url == "keyup") {
 				delete this.keys[req.data.key];
 			}
-
-			game.entities.forEach((e) => e.send(true));
 		});
 
 		sock.on("close", () => this.despawn());
@@ -197,7 +197,7 @@ class Player extends Entity {
 					this.health -= 10;
 					e.despawn();
 					if (this.health <= 0)
-			this.despawn();
+						this.despawn();
 				}
 			}
 		});
