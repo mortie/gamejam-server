@@ -318,6 +318,8 @@ export default class Game {
 	spawn(ent) {
 		this.entities[this.id] = ent;
 		this.id += 1;
+		if (this.id > 5000)
+			this.id = 0;
 	}
 
 	start() {
