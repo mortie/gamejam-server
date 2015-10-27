@@ -51,7 +51,7 @@ class Entity {
 	}
 
 	get boundingRect() {
-		if (this.oundingRectCache)
+		if (this.boundingRectCache)
 			return this.boundingRectCache;
 
 		this.boundingRectCache = new Rectangle(this.pos.x, this.pos.y, this.width, this.height);
